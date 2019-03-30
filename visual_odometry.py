@@ -79,6 +79,7 @@ class VisualOdometry:
 		E, mask = cv2.findEssentialMat(self.px_cur, self.px_ref, focal=self.focal, pp=self.pp, method=cv2.RANSAC, prob=0.999, threshold=1.0)
 		_, R, t, mask = cv2.recoverPose(E, self.px_cur, self.px_ref, focal=self.focal, pp = self.pp)
 		absolute_scale = self.getAbsoluteScale(frame_id)
+		
 		if(absolute_scale > 0.1):
 			self.cur_t = self.cur_t + absolute_scale*self.cur_R.dot(t) 
 			self.cur_R = R.dot(self.cur_R)
