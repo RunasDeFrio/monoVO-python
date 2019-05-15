@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import pylab
 
 
-PATH0 = '/home/runas/CodeProject/TestingData1/2/'
+PATH0 = 'C:/TestingData1/4/'
 
 DRAW_STOP = False
 
 from visual_odometry import PinholeCamera, VisualOdometry
 
-k = 80
+k = 10
 def coordToImage(x, z):
 	return int(-k*x)+290, int(-k*z)+600-90
 
@@ -26,10 +26,10 @@ def resizeImg(img1):
 
 while(True):
 
-	fig = pylab.figure()
-	Axes3D(fig)
+	#fig = pylab.figure()
+	#Axes3D(fig)
 
-	pylab.show()
+	#pylab.show()
 	serial = PATH0 +'SerialRead.txt'
 	cam_time = PATH0+'times'
 	#cam = PinholeCamera(1241.0, 376.0, 718.8560, 718.8560, 607.1928, 185.2157)
@@ -38,6 +38,7 @@ while(True):
 
 	traj = np.zeros((600,600,3), dtype=np.uint8)
 
+	cv2.namedWindow('Trajectory', cv2.WINDOW_NORMAL)
 	for i in traj:
 		for j in i:
 			j[0] = 255
@@ -67,7 +68,7 @@ while(True):
 
 	img_id = 0
 	t_cam = vo.getCamTime(img_id)
-	for i in range(451):#4541
+	for i in range(len(vo.serialData)):#4541
 		#all_time = time.time()
 		#read_time = time.time()
 		
@@ -86,15 +87,24 @@ while(True):
 		x0s = x_s
 		y0s = y_s
 
-		if (t_cam <= t_s and img_id < 17):
+		if (t_cam <= t_s and img_id < len(vo.cam_times)):
 
-			img = cv2.imread(path1+str(img_id).zfill(6)+'.png', 0)
-			#img = cv2.imread(path1+"TESTING_CAM"+str(img_id)+'.png', 0)
+			#img = cv2.imread(path1+str(img_id).zfill(6)+'.png', 0)
+			if(img_id == 0):
+				idd = 0
+			elif(img_id == 1):
+				idd = 16
+			else:
+				idd = img_id + 1
+			img = cv2.imread(path1+"TESTING_CAM"+str(idd)+'.png', 0)
 			#read_time = time.time() - read_time
-			y_s1, x_s1, t_s1 = vo.getSerialData(i-1)
-
-			x_true = (t_cam-t_s1)*(x_s - x_s1)/(t_s-t_s1) + x_s1
-			y_true = (t_cam-t_s1)*(y_s - y_s1)/(t_s-t_s1) + y_s1
+			if(i != 0):
+				y_s1, x_s1, t_s1 = vo.getSerialData(i-1)
+				x_true = (t_cam-t_s1)*(x_s - x_s1)/(t_s-t_s1) + x_s1
+				y_true = (t_cam-t_s1)*(y_s - y_s1)/(t_s-t_s1) + y_s1
+			else:
+				x_true = x_s
+				y_true = y_s
 
 			cv2.circle(traj, (coordToImage(x_true, y_true)), 2, (255,0,0), 1)
 
@@ -135,7 +145,7 @@ while(True):
 			cv2.circle(traj, (coordToImage(x, z)), 2, (0,255,255), -1) #вывод положения камеры
 
 			cv2.line(traj, (coordToImage(_x, _z)), (coordToImage(x, z)), (0,0,255)) #вывод пути камеры
-			#cv2.line(traj, (coordToImage(x, z)), (coordToImage(Zz[0], Zz[2])), (128,0,255)) #вывод направления камеры
+			cv2.line(traj, (coordToImage(x, z)), (coordToImage(Zz[0], Zz[2])), (128,0,255)) #вывод направления камеры
 			#cv2.line(traj, (coordToImage(_x, _z)), (coordToImage(x, z)), (255,0,255))
 			_x = x
 			_y = y
@@ -167,8 +177,8 @@ while(True):
 				cv2.imshow('IMAGE', resizeImg(img1))
 				DRAW_STOP = True
 			
-			img_id = img_id + 3
-			if(img_id<17):
+			img_id = img_id + 1
+			if(img_id < len(vo.cam_times)):
 				t_cam = vo.getCamTime(img_id)
 		cv2.imshow('Trajectory', traj)
 		if(DRAW_STOP):

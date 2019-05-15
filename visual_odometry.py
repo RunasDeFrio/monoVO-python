@@ -367,7 +367,7 @@ class VisualOdometry:
 		if(t__[2]<0):
 			t = -t
 			self.cur_t = self.ref_t + self.absolute_scale*self.cur_R.dot(t) 
-
+		
 		self.cur_R = R.dot(self.cur_R)
 
 		self.frames[-1].R = self.cur_R.transpose()
