@@ -36,12 +36,14 @@ class Frame:
     def GetVisibleSpacePoint(self):
         points = np.zeros((len(self.space_point), 2), dtype=np.float32)
         spaces = np.zeros((len(self.space_point), 3), dtype=np.float32)
+        index = {}
 
         for i, j in enumerate(self.space_point.keys()):
             points[i, :] = self.keypoints[j].pt
             spaces[i, :] = self.space_point[j]
+            index[i] = j
 
-        return spaces, points
+        return spaces, points, index
 
     #Записывает в словарь данные о меш-точках
     def mapingKeyPointsInFrame(self, matche, frame):
@@ -67,6 +69,11 @@ class Frame:
         else:
             self.key_map.pop(index)
 
+    def PopKey(self, index):
+        self.track_key.remove(index)
+        self.space_point.pop(index)
+        self.key_map.pop(index)
+
 
     #!!!!НЕ ПРИМЕНЯТЬ ЕСЛИ БЫЛИ СВЯЗАННЫЕ ТОЧКИ С БОЛЕЕ ЧЕМ 1 ИЗОБРАЖЕНИЕМ!!!!
     def GetAllMatchKeyPoints(self):
@@ -81,3 +88,6 @@ class Frame:
             points2[i, :] = frame.keypoints[k].pt
 
         return points2, points1
+
+
+

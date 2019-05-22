@@ -4,6 +4,7 @@ import time
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import pylab
+from core import *
 
 
 PATH0 = 'C:/TestingData1/4/'
@@ -12,12 +13,12 @@ DRAW_STOP = False
 
 from visual_odometry import PinholeCamera, VisualOdometry
 
-k = 10
+k = 30
 def coordToImage(x, z):
-	return int(-k*x)+290, int(-k*z)+600-90
+	return int(k*x)+290, int(-k*z)+600-90
 
 def resizeImg(img1):
-	scale_percent = 50 # percent of original size
+	scale_percent = 100 # percent of original size
 	width = int(img1.shape[1] * scale_percent / 100)
 	height = int(img1.shape[0] * scale_percent / 100)
 	dim = (width, height)
@@ -57,7 +58,9 @@ while(True):
 	_x = 0
 	_y = 0
 	_z = 0
+
 	path = 0
+	
 	t0 = 0
 	x_prev = 0
 	y_prev = 0
@@ -97,14 +100,12 @@ while(True):
 			else:
 				idd = img_id + 1
 			img = cv2.imread(path1+"TESTING_CAM"+str(idd)+'.png', 0)
-			#read_time = time.time() - read_time
 			if(i != 0):
 				y_s1, x_s1, t_s1 = vo.getSerialData(i-1)
 				x_true = (t_cam-t_s1)*(x_s - x_s1)/(t_s-t_s1) + x_s1
 				y_true = (t_cam-t_s1)*(y_s - y_s1)/(t_s-t_s1) + y_s1
 			else:
-				x_true = x_s
-				y_true = y_s
+				x_true, y_true = x_s, y_s
 
 			cv2.circle(traj, (coordToImage(x_true, y_true)), 2, (255,0,0), 1)
 
@@ -115,28 +116,16 @@ while(True):
 			x_prev, y_prev = x_true, y_true
 
 			vo.absolute_scale = absolute_scale
-			#up_time = time.time()
 			vo.update(img, img_id)
-			#up_time = time.time() - up_time
 			cur_t = vo.cur_t
 			
 			if(img_id > 0):
 				x, y, z = cur_t[0]+x00, cur_t[1], cur_t[2]+z00
-				Zz = vo.RT2P(vo.cur_R, cur_t).dot(Xx)
+				Zz = RT2P(vo.cur_R, cur_t).dot(Xx)
 				Zz = Zz.reshape(4)
 			else:
 				x00, z00 = x_true, y_true
 				x, y, z = x_true, x_true, y_true
-
-			#true_x, true_y = coordToImage(vo.trueX, vo.trueZ)
-
-			#print("error is:", x-x_true,z-y_true)
-			#path = path + (((x-_x)**2+(_z-z)**2)**(1/2))
-			#print("path:", path)
-
-
-			#all_time = time.time() - all_time
-			#print('all', all_time, 'read ', read_time/all_time*100, 'update ', up_time/all_time)
 
 			for p in vo.point:
 				cv2.circle(traj, coordToImage(p[0]+x00, p[2]+z00), 2, (255,0,0), -1)
@@ -163,17 +152,22 @@ while(True):
 			cv2.rectangle(traj, (10, 20), (600, 60), (255,255,255), -1)
 			text = "Coordinates: x=%2fm y=%2fm z=%2fm"%(x,y,z)
 			cv2.putText(traj, text, (20,40), cv2.FONT_HERSHEY_PLAIN, 1, (0,0,0), 1, 8)
-
+			img0 = cv2.cvtColor(img, cv2.COLOR_BAYER_GR2RGB)
 			if(img_id != 0):
 				p2, p1 = vo.frames[-1].GetAllMatchKeyPoints()
 				for i, pt1 in enumerate(p1):
 					pt2 = p2[i]
-					cv2.line(img, (int(pt1[0]),int(pt1[1])), (int(pt2[0]),int(pt2[1])), (0,0,255))
+					cv2.line(img0, (int(pt1[0]),int(pt1[1])), (int(pt2[0]),int(pt2[1])), (0,255,255))
+				for index in vo.frames[-1].space_point.keys():
+					X = vo.frames[-1].space_point[index]
+					u = Norm2(vo.cam.K.dot(vo.frames[-1].R.dot(X) + vo.frames[-1].T.reshape(3)))
+					cv2.circle(img0, (int(u[0]),int(u[1])), 3, (255,0,0), -1) #вывод положения камеры
+
 
 				img1 = cv2.drawMatches(vo.frames[-2].frame, vo.frames[-2].keypoints, vo.frames[-1].frame, vo.frames[-1].keypoints, vo.matche, None, flags =  cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
 				
 				
-				cv2.imshow('IM', resizeImg(img))
+				cv2.imshow('IM', resizeImg(img0))
 				cv2.imshow('IMAGE', resizeImg(img1))
 				DRAW_STOP = True
 			
